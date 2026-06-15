@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "Service marketplace",
+    "slug": "service-marketplace",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "servicemarketplace",
+    "userInterfaceStyle": "automatic",
+    "platforms": ["ios", "android"],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0f172a"
+      }
+    }
+  }
+}

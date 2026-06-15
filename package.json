@@ -1,0 +1,19 @@
+{
+  "name": "service-provider-monorepo",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "npx --yes pnpm@9.15.4 exec turbo run dev",
+    "lint": "turbo run lint",
+    "format": "prettier -w \"**/*.{ts,tsx,js,jsx,json,md}\""
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  },
+  "packageManager": "pnpm@9.15.4",
+  "engines": {
+    "node": ">=20"
+  }
+}
