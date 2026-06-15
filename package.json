@@ -1,6 +1,10 @@
 {
   "name": "service-provider-monorepo",
   "private": true,
+  "dependencies": {
+    "react": "19.2.6",
+    "react-dom": "19.2.6"
+  },
   "scripts": {
     "build": "turbo run build",
     "dev": "npx --yes pnpm@9.15.4 exec turbo run dev",
