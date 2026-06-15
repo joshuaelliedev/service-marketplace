@@ -1,0 +1,21 @@
+# Render Blueprint — free API deploy (no corepack; avoids EROFS on /usr/bin/pnpm)
+# Dashboard: New > Blueprint > connect repo, or copy settings below into a Web Service.
+services:
+  - type: web
+    name: service-marketplace-api
+    runtime: node
+    plan: free
+    buildCommand: npx pnpm@9.15.4 install --prod=false && npx pnpm@9.15.4 --filter @repo/api build
+    startCommand: node apps/api/dist/main.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_SEED_EMAIL
+        sync: false
+      - key: ADMIN_SEED_PASSWORD
+        sync: false
