@@ -1,19 +1,12 @@
-import {
-  Body,
-  Controller,
-  ForbiddenException,
-  Get,
-  Param,
-  Post,
-  UseGuards,
-} from "@nestjs/common";
+import { Body, Controller, ForbiddenException, Get, Header, Param, Post, UseGuards } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import type { JwtUser } from "../auth/jwt.types";
 import { BookingChatService } from "./booking-chat.service";
 import { BookingsService } from "./bookings.service";
+import { ReceiptsService } from "./receipts.service";
 import { UserRole } from "../users/user.schema";
-import { SlotHalf } from "./booking.schema";
+import { SlotHalf, PaymentMethod } from "./booking.schema";
 import { IsEnum, IsString, Matches, MaxLength, MinLength } from "class-validator";
 
 class CreateBookingDto {
@@ -25,6 +18,9 @@ class CreateBookingDto {
 
   @IsEnum(SlotHalf)
   slotHalf!: SlotHalf;
+
+  @IsEnum(PaymentMethod)
+  paymentMethod!: PaymentMethod;
 }
 
 class SendBookingMessageDto {
@@ -39,6 +35,7 @@ export class BookingsController {
   constructor(
     private readonly bookings: BookingsService,
     private readonly chat: BookingChatService,
+    private readonly receipts: ReceiptsService,
   ) {}
 
   @UseGuards(AuthGuard("jwt"))
@@ -116,6 +113,12 @@ export class BookingsController {
   customerConfirm(@CurrentUser() user: JwtUser, @Param("id") id: string) {
     if (user.role !== UserRole.CUSTOMER) throw new ForbiddenException("Customers only");
     return this.bookings.customerConfirm(user.sub, id);
+  }
+
+  @UseGuards(AuthGuard("jwt"))
+  @Get(":id/receipt")
+  receipt(@CurrentUser() user: JwtUser, @Param("id") id: string) {
+    return this.receipts.generatePdf(user.sub, user.role, id);
   }
 
   @UseGuards(AuthGuard("jwt"))

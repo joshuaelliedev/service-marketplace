@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "@repo/theme/globals.css";
 import "./globals.css";
-import { AppHeader } from "@/components/app-header";
+import { AppShell } from "@/components/app-shell";
 
 export const metadata: Metadata = {
   title: "Admin — service marketplace",
@@ -16,8 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AppHeader />
-        {children}
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

@@ -6,6 +6,7 @@ import { BookingMessage, BookingMessageSchema } from "./booking-message.schema";
 import { BookingChatService } from "./booking-chat.service";
 import { BookingsController } from "./bookings.controller";
 import { BookingsService } from "./bookings.service";
+import { ReceiptsService } from "./receipts.service";
 import { ListingsModule } from "../listings/listings.module";
 import { UsersModule } from "../users/users.module";
 import { NotificationsModule } from "../notifications/notifications.module";
@@ -22,7 +23,7 @@ import { NotificationsModule } from "../notifications/notifications.module";
     NotificationsModule,
   ],
   controllers: [BookingsController],
-  providers: [BookingsService, BookingChatService],
+  providers: [BookingsService, BookingChatService, ReceiptsService],
   exports: [BookingsService],
 })
 export class BookingsModule {}

@@ -34,7 +34,7 @@ export function ListingCard({
       {description ? <p className="listing-card__desc">{excerpt(description, 140)}</p> : null}
       <div className="listing-card__footer">
         <span className="listing-card__price">{formatPeso(basePriceCents)}</span>
-        <span className="listing-card__note">+ platform fee at checkout</span>
+        <span className="listing-card__note">+ service fee at checkout</span>
       </div>
       <Link href={link} className="listing-card__cta">
         View details

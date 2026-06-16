@@ -4,8 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { apiJson } from "@/lib/api";
 import { getToken } from "@/lib/auth-storage";
-import { bookingStatusLabel, pesoToCentavos } from "@/lib/format";
-import { useAdminPending } from "@/lib/use-admin-pending";
+import { bookingStatusLabel, formatPeso, pesoToCentavos } from "@/lib/format";
 import { useRequireAdmin } from "@/lib/use-require-admin";
 
 type Stats = {
@@ -17,13 +16,14 @@ type Stats = {
   listings: number;
   publishedListings: number;
   bookingsByStatus: Record<string, number>;
+  companyWalletCents: number;
+  vatWalletCents: number;
 };
 
 type Category = { _id: string; name: string; isActive: boolean };
 
 export default function AdminHomePage() {
   const { me, ready, isAdmin } = useRequireAdmin();
-  const { counts, refresh: refreshPending } = useAdminPending(isAdmin);
   const [stats, setStats] = useState<Stats | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -32,9 +32,6 @@ export default function AdminHomePage() {
   const [catName, setCatName] = useState("");
   const [topupUserId, setTopupUserId] = useState("");
   const [topupPeso, setTopupPeso] = useState("5000");
-  const [feeProviderId, setFeeProviderId] = useState("");
-  const [feePercent, setFeePercent] = useState(10);
-  const [feeFixedPeso, setFeeFixedPeso] = useState("100");
   const [busy, setBusy] = useState<string | null>(null);
 
   const refreshAdminData = useCallback(async () => {
@@ -71,7 +68,6 @@ export default function AdminHomePage() {
       await action();
       setSuccess(successMessage);
       await refreshAdminData();
-      await refreshPending();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Action failed");
     } finally {
@@ -125,31 +121,6 @@ export default function AdminHomePage() {
     );
   }
 
-  async function setFees(e: React.FormEvent) {
-    e.preventDefault();
-    const token = getToken();
-    if (!token) return;
-    const fixedPeso = Number(feeFixedPeso);
-    if (!Number.isFinite(fixedPeso) || fixedPeso < 0) {
-      setError("Enter a valid fixed fee in pesos");
-      return;
-    }
-    await runAction(
-      "fees",
-      async () => {
-        await apiJson(`/admin/providers/${feeProviderId.trim()}/fees`, {
-          method: "PATCH",
-          token,
-          body: JSON.stringify({
-            feePercent,
-            feeFixedCents: pesoToCentavos(fixedPeso),
-          }),
-        });
-      },
-      "Provider fees updated.",
-    );
-  }
-
   if (!ready || !me) {
     return (
       <main>
@@ -181,28 +152,6 @@ export default function AdminHomePage() {
 
       {error ? <p className="text-error">{error}</p> : null}
       {success ? <p className="text-success">{success}</p> : null}
-
-      <section className="section-block">
-        <h2>Needs attention</h2>
-        <div className="quick-links">
-          <Link href="/kyc" className="quick-link-card">
-            <span className="quick-link-card__label">KYC review</span>
-            <span className="quick-link-card__meta">
-              {counts.kyc === 0
-                ? "No pending submissions"
-                : `${counts.kyc} pending submission${counts.kyc === 1 ? "" : "s"}`}
-            </span>
-          </Link>
-          <Link href="/wallet-requests" className="quick-link-card">
-            <span className="quick-link-card__label">Wallet requests</span>
-            <span className="quick-link-card__meta">
-              {counts.wallet === 0
-                ? "No pending cash in/out"
-                : `${counts.wallet} pending request${counts.wallet === 1 ? "" : "s"}`}
-            </span>
-          </Link>
-        </div>
-      </section>
 
       <section className="section-block">
         <h2>Platform stats</h2>
@@ -237,6 +186,14 @@ export default function AdminHomePage() {
               <div className="stat-card">
                 <span className="stat-card__label">Categories</span>
                 <span className="stat-card__value">{stats.categories}</span>
+              </div>
+              <div className="stat-card">
+                <span className="stat-card__label">Company wallet</span>
+                <span className="stat-card__value">{formatPeso(stats.companyWalletCents)}</span>
+              </div>
+              <div className="stat-card">
+                <span className="stat-card__label">VAT wallet</span>
+                <span className="stat-card__value">{formatPeso(stats.vatWalletCents)}</span>
               </div>
             </div>
             {Object.keys(stats.bookingsByStatus).length > 0 ? (
@@ -317,46 +274,6 @@ export default function AdminHomePage() {
           </label>
           <button type="submit" disabled={busy === "topup"}>
             {busy === "topup" ? "Topping up…" : "Top up wallet"}
-          </button>
-        </form>
-      </section>
-
-      <section className="detail-panel section-block">
-        <h2>Provider fees</h2>
-        <form onSubmit={setFees} className="form">
-          <label className="field">
-            <span>Provider user ID</span>
-            <input
-              value={feeProviderId}
-              onChange={(e) => setFeeProviderId(e.target.value)}
-              placeholder="MongoDB user _id"
-              required
-            />
-          </label>
-          <label className="field">
-            <span>Fee percent (of base price)</span>
-            <input
-              type="number"
-              value={feePercent}
-              onChange={(e) => setFeePercent(Number(e.target.value))}
-              min={0}
-              max={100}
-              required
-            />
-          </label>
-          <label className="field">
-            <span>Fixed fee (₱)</span>
-            <input
-              type="number"
-              value={feeFixedPeso}
-              onChange={(e) => setFeeFixedPeso(e.target.value)}
-              min={0}
-              step="0.01"
-              required
-            />
-          </label>
-          <button type="submit" disabled={busy === "fees"}>
-            {busy === "fees" ? "Saving…" : "Save fees"}
           </button>
         </form>
       </section>

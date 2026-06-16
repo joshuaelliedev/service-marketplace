@@ -5,6 +5,7 @@ import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import type { JwtUser } from "../auth/jwt.types";
 import { UserRole } from "../users/user.schema";
 import { WalletRequestType } from "./wallet-request.schema";
+import { WalletLedgerService } from "./wallet-ledger.service";
 import { WalletService } from "./wallet.service";
 
 class CreateWalletRequestDto {
@@ -24,7 +25,18 @@ class CreateWalletRequestDto {
 @Controller("wallet")
 @UseGuards(AuthGuard("jwt"))
 export class WalletController {
-  constructor(private readonly wallet: WalletService) {}
+  constructor(
+    private readonly wallet: WalletService,
+    private readonly ledger: WalletLedgerService,
+  ) {}
+
+  @Get("transactions/mine")
+  listTransactions(@CurrentUser() user: JwtUser) {
+    if (user.role !== UserRole.CUSTOMER && user.role !== UserRole.PROVIDER) {
+      return [];
+    }
+    return this.ledger.listMine(user.sub);
+  }
 
   @Get("requests/mine")
   listMine(@CurrentUser() user: JwtUser) {
