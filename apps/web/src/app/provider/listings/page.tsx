@@ -195,6 +195,9 @@ export default function ProviderListingsPage() {
                   isPublished
                   href={`/listings/${l._id}`}
                 />
+                <p style={{ marginTop: "0.5rem" }}>
+                  <Link href={`/provider/listings/${l._id}/edit`}>Edit listing</Link>
+                </p>
               </li>
             ))}
           </ul>
@@ -215,6 +218,9 @@ export default function ProviderListingsPage() {
                   categoryName={categoryNames[normalizeId(l.categoryId)]}
                   isPublished={false}
                 />
+                <p style={{ marginTop: "0.5rem" }}>
+                  <Link href={`/provider/listings/${l._id}/edit`}>Edit listing</Link>
+                </p>
               </li>
             ))}
           </ul>

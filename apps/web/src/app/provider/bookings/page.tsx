@@ -26,6 +26,8 @@ type Booking = {
   slotHalf: string;
   customerTotalCents: number;
   listingId: string | { _id: string };
+  referenceNumber?: string;
+  paymentMethod?: string;
 };
 
 export default function ProviderBookingsPage() {
@@ -97,12 +99,15 @@ export default function ProviderBookingsPage() {
     return (
       <li key={b._id}>
         <BookingCard
+          referenceNumber={b.referenceNumber}
+          paymentMethod={b.paymentMethod}
           serviceTitle={titles[listingId] ?? "Service"}
           serviceDateYmd={b.serviceDateYmd}
           slotHalf={b.slotHalf}
           status={b.status}
           statusLabel={statusLabel}
           totalCents={b.customerTotalCents}
+          totalLabel={b.status === "completed" ? "Total paid" : b.paymentMethod === "cash" ? "Service total" : "Total held"}
           chatHref={`/bookings/${b._id}/chat`}
           unreadMessages={byBookingId[b._id] ?? 0}
         >

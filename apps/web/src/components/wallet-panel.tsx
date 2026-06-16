@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { apiJson } from "@/lib/api";
 import { getToken, notifyWalletChange } from "@/lib/auth-storage";
@@ -106,6 +107,12 @@ export function WalletPanel({ availableCents }: { availableCents: number }) {
           <span className="stat-card__label">Available</span>
           <span className="stat-card__value">{formatPeso(availableCents)}</span>
         </div>
+      </div>
+
+      <div className="wallet-panel__actions">
+        <Link href="/wallet/transactions" className="btn">
+          Transaction history
+        </Link>
       </div>
 
       <p className="text-muted" style={{ marginTop: "1rem" }}>

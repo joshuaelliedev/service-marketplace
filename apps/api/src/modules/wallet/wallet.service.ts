@@ -13,6 +13,7 @@ import {
   WalletRequestStatus,
   WalletRequestType,
 } from "./wallet-request.schema";
+import { WalletTransactionType } from "./wallet-transaction.schema";
 
 @Injectable()
 export class WalletService {
@@ -42,6 +43,9 @@ export class WalletService {
     if (!user || user.isSystemWallet) throw new BadRequestException("Invalid user");
 
     if (input.type === WalletRequestType.CASH_OUT_DIRECT) {
+      if (user.walletAvailableCents < 0) {
+        throw new BadRequestException("Settle negative balance before cash out");
+      }
       if (user.walletAvailableCents < input.amountCents) {
         throw new BadRequestException("Insufficient available balance for cash out");
       }
@@ -98,9 +102,18 @@ export class WalletService {
 
     if (approve) {
       if (req.type === WalletRequestType.CASH_IN_DIRECT) {
-        await this.users.adminTopUp(userId, req.amountCents);
+        await this.users.adminTopUp(
+          userId,
+          req.amountCents,
+          `WR-${req._id.toString().slice(-8).toUpperCase()}`,
+          WalletTransactionType.CASH_IN,
+        );
       } else {
-        await this.users.adminCashOut(userId, req.amountCents);
+        await this.users.adminCashOut(
+          userId,
+          req.amountCents,
+          `WR-${req._id.toString().slice(-8).toUpperCase()}`,
+        );
       }
       req.status = WalletRequestStatus.APPROVED;
     } else {

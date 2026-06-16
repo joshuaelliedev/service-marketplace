@@ -6,13 +6,20 @@ import {
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
-import { computePricingCents } from "../../common/money";
+import { generateBookingReference } from "../../common/booking-reference";
 import { canSelfServiceCancel } from "../../common/ph-calendar";
 import { ListingsService } from "../listings/listings.service";
 import { NotificationsService } from "../notifications/notifications.service";
+import { PlatformSettingsService } from "../platform-settings/platform-settings.service";
 import { UsersService } from "../users/users.service";
 import { UserRole } from "../users/user.schema";
-import { Booking, BookingDocument, BookingStatus, SlotHalf } from "./booking.schema";
+import {
+  Booking,
+  BookingDocument,
+  BookingStatus,
+  PaymentMethod,
+  SlotHalf,
+} from "./booking.schema";
 
 const ACTIVE_STATUSES: BookingStatus[] = [
   BookingStatus.PENDING_PROVIDER,
@@ -27,17 +34,26 @@ export class BookingsService {
     private readonly listings: ListingsService,
     private readonly users: UsersService,
     private readonly notifications: NotificationsService,
+    private readonly platformSettings: PlatformSettingsService,
   ) {}
 
   async create(
     customerId: string,
-    input: { listingId: string; serviceDateYmd: string; slotHalf: SlotHalf },
+    input: {
+      listingId: string;
+      serviceDateYmd: string;
+      slotHalf: SlotHalf;
+      paymentMethod: PaymentMethod;
+    },
   ) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(input.serviceDateYmd)) {
       throw new BadRequestException("serviceDateYmd must be YYYY-MM-DD");
     }
     if (!Object.values(SlotHalf).includes(input.slotHalf)) {
       throw new BadRequestException("slotHalf must be AM or PM");
+    }
+    if (!Object.values(PaymentMethod).includes(input.paymentMethod)) {
+      throw new BadRequestException("Invalid payment method");
     }
 
     const listing = await this.listings.requireListingForBooking(input.listingId);
@@ -56,30 +72,46 @@ export class BookingsService {
     const provider = await this.users.findById(listing.providerId.toString());
     if (!provider) throw new BadRequestException("Provider missing");
 
-    const { customerTotalCents, platformFeeCents } = computePricingCents(
-      listing.basePriceCents,
-      provider.providerFeePercent,
-      provider.providerFeeFixedCents,
-    );
+    const pricing = await this.platformSettings.priceListing(listing.basePriceCents);
+    const referenceNumber = generateBookingReference();
 
-    await this.users.reserveForBooking(customerId, customerTotalCents);
+    if (input.paymentMethod === PaymentMethod.WALLET) {
+      await this.users.reserveForBooking(
+        customerId,
+        pricing.customerTotalCents,
+        referenceNumber,
+      );
+    } else {
+      if (!this.users.isWalletSettled(provider)) {
+        throw new BadRequestException(
+          "Provider must settle wallet balance before accepting cash bookings",
+        );
+      }
+    }
 
     const booking = await this.bookingModel.create({
+      referenceNumber,
       listingId: listing._id,
       providerId: listing.providerId,
       customerId: new Types.ObjectId(customerId),
       serviceDateYmd: input.serviceDateYmd,
       slotHalf: input.slotHalf,
       status: BookingStatus.PENDING_PROVIDER,
-      basePriceCents: listing.basePriceCents,
-      platformFeeCents,
-      customerTotalCents,
+      paymentMethod: input.paymentMethod,
+      basePriceCents: pricing.basePriceCents,
+      serviceFeeCents: pricing.serviceFeeCents,
+      companyFeeCents: pricing.companyFeeCents,
+      vatFeeCents: pricing.vatFeeCents,
+      customerTotalCents: pricing.customerTotalCents,
+      serviceFeeCollected: false,
     });
 
+    const payLabel =
+      input.paymentMethod === PaymentMethod.CASH ? " (cash payment)" : "";
     await this.notifications.notify(
       listing.providerId.toString(),
       "New booking request",
-      `A customer booked your service for ${input.serviceDateYmd} (${input.slotHalf}).`,
+      `Booking ${booking.referenceNumber} for ${input.serviceDateYmd} (${input.slotHalf})${payLabel}.`,
       "booking_created",
     );
 
@@ -108,6 +140,10 @@ export class BookingsService {
     return b;
   }
 
+  async findByReference(referenceNumber: string) {
+    return this.bookingModel.findOne({ referenceNumber }).lean();
+  }
+
   async accept(providerId: string, bookingId: string) {
     const booking = await this.requireBooking(bookingId);
     if (booking.providerId.toString() !== providerId)
@@ -115,12 +151,31 @@ export class BookingsService {
     if (booking.status !== BookingStatus.PENDING_PROVIDER) {
       throw new BadRequestException("Invalid state");
     }
+
+    if (booking.paymentMethod === PaymentMethod.CASH) {
+      const provider = await this.users.findById(providerId);
+      if (!provider) throw new BadRequestException("Provider missing");
+      if (provider.walletAvailableCents < booking.serviceFeeCents) {
+        throw new BadRequestException(
+          "Insufficient wallet balance to cover service fee for cash booking",
+        );
+      }
+      await this.users.collectCashServiceFee({
+        providerId,
+        serviceFeeCents: booking.serviceFeeCents,
+        companyFeeCents: booking.companyFeeCents,
+        vatFeeCents: booking.vatFeeCents,
+        referenceNumber: booking.referenceNumber,
+      });
+      booking.serviceFeeCollected = true;
+    }
+
     booking.status = BookingStatus.ACCEPTED;
     await booking.save();
     await this.notifications.notify(
       booking.customerId.toString(),
       "Booking accepted",
-      "The provider accepted your booking.",
+      `Booking ${booking.referenceNumber} was accepted.`,
       "booking_accepted",
     );
     return booking;
@@ -133,16 +188,19 @@ export class BookingsService {
     if (booking.status !== BookingStatus.PENDING_PROVIDER) {
       throw new BadRequestException("Invalid state");
     }
-    await this.users.releaseEscrowToAvailable(
-      booking.customerId.toString(),
-      booking.customerTotalCents,
-    );
+    if (booking.paymentMethod === PaymentMethod.WALLET) {
+      await this.users.releaseEscrowToAvailable(
+        booking.customerId.toString(),
+        booking.customerTotalCents,
+        booking.referenceNumber,
+      );
+    }
     booking.status = BookingStatus.REJECTED;
     await booking.save();
     await this.notifications.notify(
       booking.customerId.toString(),
       "Booking rejected",
-      "The provider rejected your booking. Your payment was returned to your wallet.",
+      `Booking ${booking.referenceNumber} was rejected.`,
       "booking_rejected",
     );
     return booking;
@@ -160,7 +218,7 @@ export class BookingsService {
     await this.notifications.notify(
       booking.customerId.toString(),
       "Service marked complete",
-      "Please confirm completion to release payment.",
+      `Please confirm completion for ${booking.referenceNumber}.`,
       "booking_provider_completed",
     );
     return booking;
@@ -173,15 +231,21 @@ export class BookingsService {
       throw new BadRequestException("Invalid state");
     }
 
-    const platform = await this.users.getPlatformWalletUser();
-    await this.users.payoutCompletedBooking({
-      customerId: booking.customerId.toString(),
-      providerId: booking.providerId.toString(),
-      platformUserId: platform.id,
-      customerTotalCents: booking.customerTotalCents,
-      basePriceCents: booking.basePriceCents,
-      platformFeeCents: booking.platformFeeCents,
-    });
+    if (booking.paymentMethod === PaymentMethod.WALLET) {
+      const company = await this.users.getCompanyWalletUser();
+      const vat = await this.users.getVatWalletUser();
+      await this.users.payoutCompletedWalletBooking({
+        customerId: booking.customerId.toString(),
+        providerId: booking.providerId.toString(),
+        companyWalletId: company.id,
+        vatWalletId: vat.id,
+        customerTotalCents: booking.customerTotalCents,
+        basePriceCents: booking.basePriceCents,
+        companyFeeCents: booking.companyFeeCents,
+        vatFeeCents: booking.vatFeeCents,
+        referenceNumber: booking.referenceNumber,
+      });
+    }
 
     booking.status = BookingStatus.COMPLETED;
     await booking.save();
@@ -189,13 +253,13 @@ export class BookingsService {
     await this.notifications.notify(
       booking.providerId.toString(),
       "Booking completed",
-      "The customer confirmed completion. Funds were released.",
+      `Booking ${booking.referenceNumber} is completed.`,
       "booking_completed",
     );
     await this.notifications.notify(
       booking.customerId.toString(),
       "Booking completed",
-      "Thanks — this booking is now completed.",
+      `Thanks — booking ${booking.referenceNumber} is complete.`,
       "booking_completed",
     );
 
@@ -224,15 +288,27 @@ export class BookingsService {
       );
     }
 
-    if (
-      booking.status === BookingStatus.PENDING_PROVIDER ||
-      booking.status === BookingStatus.ACCEPTED ||
-      booking.status === BookingStatus.PROVIDER_COMPLETED
-    ) {
-      await this.users.releaseEscrowToAvailable(
-        booking.customerId.toString(),
-        booking.customerTotalCents,
-      );
+    if (booking.paymentMethod === PaymentMethod.WALLET) {
+      if (
+        booking.status === BookingStatus.PENDING_PROVIDER ||
+        booking.status === BookingStatus.ACCEPTED ||
+        booking.status === BookingStatus.PROVIDER_COMPLETED
+      ) {
+        await this.users.releaseEscrowToAvailable(
+          booking.customerId.toString(),
+          booking.customerTotalCents,
+          booking.referenceNumber,
+        );
+      }
+    } else if (booking.serviceFeeCollected) {
+      await this.users.reverseCashServiceFee({
+        providerId: booking.providerId.toString(),
+        serviceFeeCents: booking.serviceFeeCents,
+        companyFeeCents: booking.companyFeeCents,
+        vatFeeCents: booking.vatFeeCents,
+        referenceNumber: booking.referenceNumber,
+      });
+      booking.serviceFeeCollected = false;
     }
 
     booking.status = BookingStatus.CANCELLED;
@@ -245,7 +321,7 @@ export class BookingsService {
     await this.notifications.notify(
       other,
       "Booking cancelled",
-      "A booking was cancelled (within the allowed window).",
+      `Booking ${booking.referenceNumber} was cancelled.`,
       "booking_cancelled",
     );
 
@@ -259,7 +335,7 @@ export class BookingsService {
     return Object.fromEntries(byStatus.map((x) => [x._id, x.count]));
   }
 
-  private async requireBooking(id: string): Promise<BookingDocument> {
+  async requireBooking(id: string): Promise<BookingDocument> {
     if (!Types.ObjectId.isValid(id)) throw new NotFoundException("Not found");
     const booking = await this.bookingModel.findById(id);
     if (!booking) throw new NotFoundException("Not found");

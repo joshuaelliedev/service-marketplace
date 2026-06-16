@@ -1,3 +1,99 @@
 :root {
   --layout-max-width: 720px;
 }
+
+.booking-list__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.booking-list__item .booking-card {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.booking-completed {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-top: none;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  padding: 0.75rem 1.25rem 1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.booking-completed__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.booking-completed__panel {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.booking-completed__msg {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+}
+
+.wallet-panel__actions {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.transaction-history {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.transaction-history h3 {
+  margin: 0 0 0.35rem;
+}
+
+.transaction-table-wrap {
+  overflow-x: auto;
+  margin-top: 0.75rem;
+}
+
+.transaction-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.transaction-table th,
+.transaction-table td {
+  padding: 0.5rem 0.65rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border-light);
+  white-space: nowrap;
+}
+
+.transaction-table th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-subtle);
+  font-weight: 600;
+}
+
+.transaction-table__ref {
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+}
+
+.transaction-table__credit {
+  color: #15803d;
+  font-weight: 600;
+}
+
+.transaction-table__debit {
+  color: #b91c1c;
+  font-weight: 600;
+}

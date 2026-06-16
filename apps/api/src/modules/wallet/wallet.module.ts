@@ -1,21 +1,27 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { UsersModule } from "../users/users.module";
 import { WalletRequest, WalletRequestSchema } from "./wallet-request.schema";
+import {
+  WalletTransaction,
+  WalletTransactionSchema,
+} from "./wallet-transaction.schema";
 import { WalletController } from "./wallet.controller";
+import { WalletLedgerService } from "./wallet-ledger.service";
 import { WalletService } from "./wallet.service";
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: WalletRequest.name, schema: WalletRequestSchema },
+      { name: WalletTransaction.name, schema: WalletTransactionSchema },
     ]),
-    UsersModule,
+    forwardRef(() => UsersModule),
     NotificationsModule,
   ],
   controllers: [WalletController],
-  providers: [WalletService],
-  exports: [WalletService],
+  providers: [WalletService, WalletLedgerService],
+  exports: [WalletService, WalletLedgerService],
 })
 export class WalletModule {}

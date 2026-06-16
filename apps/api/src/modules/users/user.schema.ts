@@ -16,6 +16,11 @@ export enum KycStatus {
   REJECTED = "rejected",
 }
 
+export enum SystemWalletKind {
+  COMPANY = "company",
+  VAT = "vat",
+}
+
 @Schema({ timestamps: true })
 export class User {
   @Prop({ required: true, lowercase: true, trim: true })
@@ -39,22 +44,25 @@ export class User {
   @Prop({ trim: true })
   kycAdminNote?: string;
 
-  @Prop({ default: 0, min: 0 })
+  @Prop({ default: 0 })
   walletAvailableCents: number;
 
   @Prop({ default: 0, min: 0 })
   walletEscrowCents: number;
 
-  /** Admin-configured fee on top of listing base price (percent of base). */
+  /** @deprecated v1.1 uses global platform fees */
   @Prop({ default: 10, min: 0, max: 100 })
   providerFeePercent: number;
 
-  /** Admin-configured fixed fee in centavos on top of base. */
+  /** @deprecated v1.1 uses global platform fees */
   @Prop({ default: 0, min: 0 })
   providerFeeFixedCents: number;
 
   @Prop({ default: false })
   isSystemWallet: boolean;
+
+  @Prop({ type: String, enum: SystemWalletKind, default: null })
+  systemWalletKind: SystemWalletKind | null;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

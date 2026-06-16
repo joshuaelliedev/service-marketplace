@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { BookingCard } from "@/components/booking-card";
+import { BookingExtras } from "@/components/booking-extras";
 import { EmptyState } from "@/components/empty-state";
 import { apiJson } from "@/lib/api";
 import {
@@ -26,6 +27,8 @@ type Booking = {
   slotHalf: string;
   customerTotalCents: number;
   listingId: string | { _id: string };
+  referenceNumber?: string;
+  paymentMethod?: string;
 };
 
 export default function BookingsPage() {
@@ -88,6 +91,18 @@ export default function BookingsPage() {
     );
   }
 
+  function totalLabelFor(b: Booking): string {
+    if (b.status === "completed") return "Total paid";
+    if (b.paymentMethod === "cash") return "Service total";
+    return "Total held";
+  }
+
+  function paymentLabel(method?: string): string {
+    if (method === "wallet") return "Wallet";
+    if (method === "cash") return "Cash";
+    return method ?? "";
+  }
+
   function renderBooking(b: Booking) {
     const listingId = normalizeId(b.listingId);
     const actions = getCustomerBookingActions(b.status);
@@ -95,14 +110,17 @@ export default function BookingsPage() {
       BOOKING_STATUS_LABELS[b.status as keyof typeof BOOKING_STATUS_LABELS] ?? b.status;
 
     return (
-      <li key={b._id}>
+      <li key={b._id} className="booking-list__item">
         <BookingCard
+          referenceNumber={b.referenceNumber}
+          paymentMethod={paymentLabel(b.paymentMethod)}
           serviceTitle={titles[listingId] ?? "Service"}
           serviceDateYmd={b.serviceDateYmd}
           slotHalf={b.slotHalf}
           status={b.status}
           statusLabel={statusLabel}
           totalCents={b.customerTotalCents}
+          totalLabel={totalLabelFor(b)}
           chatHref={`/bookings/${b._id}/chat`}
           unreadMessages={byBookingId[b._id] ?? 0}
         >
@@ -122,6 +140,11 @@ export default function BookingsPage() {
               })
             : null}
         </BookingCard>
+        <BookingExtras
+          bookingId={b._id}
+          referenceNumber={b.referenceNumber}
+          status={b.status}
+        />
       </li>
     );
   }

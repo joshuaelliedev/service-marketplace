@@ -19,8 +19,16 @@ export enum SlotHalf {
   PM = "PM",
 }
 
+export enum PaymentMethod {
+  WALLET = "wallet",
+  CASH = "cash",
+}
+
 @Schema({ timestamps: true })
 export class Booking {
+  @Prop({ required: true, unique: true, trim: true })
+  referenceNumber: string;
+
   @Prop({ type: Types.ObjectId, ref: ServiceListing.name, required: true })
   listingId: Types.ObjectId;
 
@@ -39,14 +47,27 @@ export class Booking {
   @Prop({ type: String, enum: BookingStatus, required: true })
   status: BookingStatus;
 
+  @Prop({ type: String, enum: PaymentMethod, required: true })
+  paymentMethod: PaymentMethod;
+
   @Prop({ required: true, min: 1 })
   basePriceCents: number;
 
   @Prop({ required: true, min: 0 })
-  platformFeeCents: number;
+  serviceFeeCents: number;
+
+  @Prop({ required: true, min: 0 })
+  companyFeeCents: number;
+
+  @Prop({ required: true, min: 0 })
+  vatFeeCents: number;
 
   @Prop({ required: true, min: 1 })
   customerTotalCents: number;
+
+  /** Cash bookings: service fee taken from provider on accept. */
+  @Prop({ default: false })
+  serviceFeeCollected: boolean;
 }
 
 export const BookingSchema = SchemaFactory.createForClass(Booking);

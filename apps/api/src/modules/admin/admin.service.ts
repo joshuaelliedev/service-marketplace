@@ -15,7 +15,7 @@ export class AdminService {
   ) {}
 
   async stats() {
-    const [humans, customers, providers, admins, categories, listings, publishedListings, bookingsByStatus] =
+    const [humans, customers, providers, admins, categories, listings, publishedListings, bookingsByStatus, companyWallet, vatWallet] =
       await Promise.all([
         this.users.countHumans(),
         this.users.countByRole(UserRole.CUSTOMER),
@@ -25,6 +25,8 @@ export class AdminService {
         this.listings.countAll(),
         this.listings.countPublished(),
         this.bookings.adminCounts(),
+        this.users.getCompanyWalletUser(),
+        this.users.getVatWalletUser(),
       ]);
 
     return {
@@ -36,6 +38,8 @@ export class AdminService {
       listings,
       publishedListings,
       bookingsByStatus,
+      companyWalletCents: companyWallet.walletAvailableCents,
+      vatWalletCents: vatWallet.walletAvailableCents,
     };
   }
 }
