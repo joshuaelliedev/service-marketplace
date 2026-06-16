@@ -1,0 +1,5 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "cd ../.. && npx pnpm@9.15.4 install",
+  "buildCommand": "cd ../.. && npx pnpm@9.15.4 --filter @repo/admin... run build"
+}

@@ -1,4 +1,8 @@
 import type { NextConfig } from "next";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** Nest API for dev; override if API runs elsewhere. */
 const apiUpstream =
@@ -6,6 +10,7 @@ const apiUpstream =
 
 const nextConfig: NextConfig = {
   transpilePackages: ["@repo/domain", "@repo/theme"],
+  outputFileTracingRoot: path.join(__dirname, "../.."),
   async rewrites() {
     return [
       {

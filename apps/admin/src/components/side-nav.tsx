@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export type SideNavItem = {
   href: string;
@@ -29,6 +29,7 @@ function NavBadge({ count }: { count: number }) {
 
 export function SideNav({ open, onClose, sections, footer }: SideNavProps) {
   const pathname = usePathname();
+  const prevPathname = useRef(pathname);
 
   useEffect(() => {
     if (!open) return;
@@ -40,9 +41,10 @@ export function SideNav({ open, onClose, sections, footer }: SideNavProps) {
   }, [open]);
 
   useEffect(() => {
+    if (prevPathname.current === pathname) return;
+    prevPathname.current = pathname;
     onClose();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- close drawer on route change
-  }, [pathname]);
+  }, [pathname, onClose]);
 
   return (
     <>

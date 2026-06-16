@@ -23,10 +23,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const alertCount = chatUnread + notifUnread;
   const brandHref = homeHrefFor(me);
   const showWallet = !loading && me && (me.role === "customer" || me.role === "provider");
-  const showMenu = !loading && me && (me.role === "customer" || me.role === "provider");
+  const showMenu =
+    !loading &&
+    (!me || me.role === "customer" || me.role === "provider");
 
   const sections = useMemo<SideNavSection[]>(() => {
-    if (!me) return [];
+    if (!me) {
+      return [
+        {
+          title: "Get started",
+          items: [
+            { href: "/listings", label: "Browse services" },
+            { href: "/login", label: "Log in" },
+            { href: "/signup", label: "Sign up" },
+          ],
+        },
+      ];
+    }
     if (me.role === "customer") {
       return [
         {
@@ -125,11 +138,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
           <nav className="app-header__nav">
             {!loading && !me ? (
-              <>
-                <Link href="/listings">Browse</Link>
-                <Link href="/login">Log in</Link>
-                <Link href="/signup">Sign up</Link>
-              </>
+              <Link href="/login">Log in</Link>
             ) : null}
             {showWallet && me ? (
               <Link href="/profile#wallet" className="app-header__balance" title="Wallet balance">
