@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { ImageKitService } from "../imagekit/imagekit.service";
@@ -12,7 +12,7 @@ import { KycService } from "./kyc.service";
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: ProviderKyc.name, schema: ProviderKycSchema }]),
-    UsersModule,
+    forwardRef(() => UsersModule),
     NotificationsModule,
   ],
   controllers: [KycController, KycAdminController],
