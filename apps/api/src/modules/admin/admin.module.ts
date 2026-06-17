@@ -7,6 +7,7 @@ import { FeedbackModule } from "../feedback/feedback.module";
 import { ListingsModule } from "../listings/listings.module";
 import { RefundsModule } from "../refunds/refunds.module";
 import { SupportModule } from "../support/support.module";
+import { KycModule } from "../kyc/kyc.module";
 import { UsersModule } from "../users/users.module";
 import { WalletModule } from "../wallet/wallet.module";
 import { AdminController } from "./admin.controller";
@@ -15,6 +16,7 @@ import { AdminService } from "./admin.service";
 @Module({
   imports: [
     UsersModule,
+    KycModule,
     CategoriesModule,
     ListingsModule,
     BookingsModule,

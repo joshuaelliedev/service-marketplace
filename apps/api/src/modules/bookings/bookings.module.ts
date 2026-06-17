@@ -8,8 +8,9 @@ import { BookingsController } from "./bookings.controller";
 import { BookingsService } from "./bookings.service";
 import { ReceiptsService } from "./receipts.service";
 import { ListingsModule } from "../listings/listings.module";
-import { UsersModule } from "../users/users.module";
 import { NotificationsModule } from "../notifications/notifications.module";
+import { KycModule } from "../kyc/kyc.module";
+import { UsersModule } from "../users/users.module";
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { NotificationsModule } from "../notifications/notifications.module";
     ]),
     ListingsModule,
     UsersModule,
+    KycModule,
     NotificationsModule,
   ],
   controllers: [BookingsController],

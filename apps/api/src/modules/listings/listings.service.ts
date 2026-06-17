@@ -7,8 +7,9 @@ import {
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import { CategoriesService } from "../categories/categories.service";
+import { KycService } from "../kyc/kyc.service";
 import { UsersService } from "../users/users.service";
-import { KycStatus, UserRole } from "../users/user.schema";
+import { UserRole } from "../users/user.schema";
 import { ServiceListing, ServiceListingDocument } from "./listing.schema";
 
 @Injectable()
@@ -18,6 +19,7 @@ export class ListingsService {
     private readonly listingModel: Model<ServiceListingDocument>,
     private readonly categories: CategoriesService,
     private readonly users: UsersService,
+    private readonly kyc: KycService,
   ) {}
 
   listPublished(categoryId?: string) {
@@ -56,9 +58,7 @@ export class ListingsService {
     if (!provider) throw new ForbiddenException("User not found");
     if (provider.role !== UserRole.PROVIDER)
       throw new ForbiddenException("Providers only");
-    if (provider.kycStatus !== KycStatus.APPROVED) {
-      throw new BadRequestException("KYC must be approved before posting services");
-    }
+    this.kyc.assertProviderKycApproved(provider);
     await this.categories.requireActiveCategoryId(input.categoryId);
     return this.listingModel.create({
       providerId: new Types.ObjectId(providerId),
@@ -92,7 +92,14 @@ export class ListingsService {
     if (patch.title !== undefined) listing.title = patch.title.trim();
     if (patch.description !== undefined) listing.description = patch.description.trim();
     if (patch.basePriceCents !== undefined) listing.basePriceCents = patch.basePriceCents;
-    if (patch.isPublished !== undefined) listing.isPublished = patch.isPublished;
+    if (patch.isPublished !== undefined) {
+      if (patch.isPublished) {
+        const provider = await this.users.findById(providerId);
+        if (!provider) throw new ForbiddenException("User not found");
+        this.kyc.assertProviderKycApproved(provider);
+      }
+      listing.isPublished = patch.isPublished;
+    }
     await listing.save();
     return listing;
   }

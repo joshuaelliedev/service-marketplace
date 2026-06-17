@@ -47,3 +47,47 @@ export async function apiJson<T>(
   }
   return json as T;
 }
+
+export async function apiFormData<T>(
+  path: string,
+  formData: FormData,
+  init: { method?: string; token?: string | null } = {},
+): Promise<T> {
+  const headers = new Headers();
+  if (init.token) headers.set("Authorization", `Bearer ${init.token}`);
+  const res = await fetch(`${getApiBaseUrl()}${path}`, {
+    method: init.method ?? "POST",
+    headers,
+    body: formData,
+  });
+  const text = await res.text();
+  let json: unknown = null;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    throw new Error(text.slice(0, 200) || `HTTP ${res.status}`);
+  }
+  if (!res.ok) {
+    const errBody = json as { message?: string | string[] } | null;
+    const msg =
+      typeof errBody?.message === "string"
+        ? errBody.message
+        : Array.isArray(errBody?.message)
+          ? errBody.message.join(", ")
+          : `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  return json as T;
+}
+
+export async function fetchAuthenticatedBlobUrl(
+  path: string,
+  token: string,
+): Promise<string> {
+  const res = await fetch(`${getApiBaseUrl()}${path}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`Failed to load file (${res.status})`);
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
+}

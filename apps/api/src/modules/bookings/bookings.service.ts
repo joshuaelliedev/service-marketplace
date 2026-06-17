@@ -9,6 +9,7 @@ import { Model, Types } from "mongoose";
 import { generateBookingReference } from "../../common/booking-reference";
 import { canSelfServiceCancel } from "../../common/ph-calendar";
 import { ListingsService } from "../listings/listings.service";
+import { KycService } from "../kyc/kyc.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { PlatformSettingsService } from "../platform-settings/platform-settings.service";
 import { UsersService } from "../users/users.service";
@@ -33,6 +34,7 @@ export class BookingsService {
     @InjectModel(Booking.name) private readonly bookingModel: Model<BookingDocument>,
     private readonly listings: ListingsService,
     private readonly users: UsersService,
+    private readonly kyc: KycService,
     private readonly notifications: NotificationsService,
     private readonly platformSettings: PlatformSettingsService,
   ) {}
@@ -152,9 +154,11 @@ export class BookingsService {
       throw new BadRequestException("Invalid state");
     }
 
+    const provider = await this.users.findById(providerId);
+    if (!provider) throw new BadRequestException("Provider missing");
+    this.kyc.assertProviderKycApproved(provider);
+
     if (booking.paymentMethod === PaymentMethod.CASH) {
-      const provider = await this.users.findById(providerId);
-      if (!provider) throw new BadRequestException("Provider missing");
       if (provider.walletAvailableCents < booking.serviceFeeCents) {
         throw new BadRequestException(
           "Insufficient wallet balance to cover service fee for cash booking",

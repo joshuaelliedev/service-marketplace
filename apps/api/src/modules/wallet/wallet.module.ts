@@ -1,6 +1,7 @@
 import { Module, forwardRef } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
 import { NotificationsModule } from "../notifications/notifications.module";
+import { KycModule } from "../kyc/kyc.module";
 import { UsersModule } from "../users/users.module";
 import { WalletRequest, WalletRequestSchema } from "./wallet-request.schema";
 import {
@@ -18,6 +19,7 @@ import { WalletService } from "./wallet.service";
       { name: WalletTransaction.name, schema: WalletTransactionSchema },
     ]),
     forwardRef(() => UsersModule),
+    KycModule,
     NotificationsModule,
   ],
   controllers: [WalletController],

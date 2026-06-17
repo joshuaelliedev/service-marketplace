@@ -6,7 +6,9 @@ import {
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import { NotificationsService } from "../notifications/notifications.service";
+import { KycService } from "../kyc/kyc.service";
 import { UsersService } from "../users/users.service";
+import { UserRole } from "../users/user.schema";
 import {
   WalletRequest,
   WalletRequestDocument,
@@ -21,6 +23,7 @@ export class WalletService {
     @InjectModel(WalletRequest.name)
     private readonly requestModel: Model<WalletRequestDocument>,
     private readonly users: UsersService,
+    private readonly kyc: KycService,
     private readonly notifications: NotificationsService,
   ) {}
 
@@ -43,6 +46,9 @@ export class WalletService {
     if (!user || user.isSystemWallet) throw new BadRequestException("Invalid user");
 
     if (input.type === WalletRequestType.CASH_OUT_DIRECT) {
+      if (user.role === UserRole.PROVIDER) {
+        this.kyc.assertProviderKycApproved(user);
+      }
       if (user.walletAvailableCents < 0) {
         throw new BadRequestException("Settle negative balance before cash out");
       }

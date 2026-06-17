@@ -9,10 +9,10 @@ import { AuthModule } from "./modules/auth/auth.module";
 import { BookingsModule } from "./modules/bookings/bookings.module";
 import { CategoriesModule } from "./modules/categories/categories.module";
 import { FeedbackModule } from "./modules/feedback/feedback.module";
+import { KycModule } from "./modules/kyc/kyc.module";
 import { ListingsModule } from "./modules/listings/listings.module";
 import { NotificationsModule } from "./modules/notifications/notifications.module";
 import { PlatformSettingsModule } from "./modules/platform-settings/platform-settings.module";
-import { ProviderModule } from "./modules/provider/provider.module";
 import { ProviderPostsModule } from "./modules/provider-posts/provider-posts.module";
 import { RatingsModule } from "./modules/ratings/ratings.module";
 import { RefundsModule } from "./modules/refunds/refunds.module";
@@ -40,7 +40,7 @@ import { WalletModule } from "./modules/wallet/wallet.module";
     FeedbackModule,
     ProviderPostsModule,
     AdminModule,
-    ProviderModule,
+    KycModule,
     WalletModule,
   ],
   controllers: [AppController],

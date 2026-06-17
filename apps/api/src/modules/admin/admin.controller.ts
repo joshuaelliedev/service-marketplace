@@ -21,6 +21,7 @@ import { FeedbackService } from "../feedback/feedback.service";
 import { PlatformSettingsService } from "../platform-settings/platform-settings.service";
 import { RefundsService } from "../refunds/refunds.service";
 import { SupportService } from "../support/support.service";
+import { KycService } from "../kyc/kyc.service";
 import { UsersService } from "../users/users.service";
 import { UserRole } from "../users/user.schema";
 import { WalletService } from "../wallet/wallet.service";
@@ -122,6 +123,7 @@ export class AdminController {
   constructor(
     private readonly admin: AdminService,
     private readonly users: UsersService,
+    private readonly kyc: KycService,
     private readonly wallet: WalletService,
     private readonly platformSettings: PlatformSettingsService,
     private readonly refunds: RefundsService,
@@ -147,12 +149,16 @@ export class AdminController {
 
   @Get("kyc/pending")
   kycPending() {
-    return this.users.listKycPending();
+    return this.kyc.listPendingForAdmin();
   }
 
   @Post("kyc/:userId/decision")
-  kycDecision(@Param("userId") userId: string, @Body() body: KycDecisionDto) {
-    return this.users.setKycDecision(userId, body.approve, body.note);
+  kycDecision(
+    @CurrentUser() admin: JwtUser,
+    @Param("userId") userId: string,
+    @Body() body: KycDecisionDto,
+  ) {
+    return this.kyc.decide(admin.sub, userId, body.approve, body.note);
   }
 
   @Post("wallets/topup")
