@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, Res, UseGuards } from "@nestjs/common";
+import type { Response } from "express";
 import { AuthGuard } from "@nestjs/passport";
 import {
   IsBoolean,
@@ -150,6 +151,21 @@ export class AdminController {
   @Get("kyc/pending")
   kycPending() {
     return this.kyc.listPendingForAdmin();
+  }
+
+  @Get("kyc/:userId/files/:purpose")
+  async kycFile(
+    @Param("userId") userId: string,
+    @Param("purpose") purpose: string,
+    @Res({ passthrough: false }) res: Response,
+  ) {
+    const { buffer, contentType } = await this.kyc.streamDocumentForAdmin(
+      userId,
+      purpose,
+    );
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Cache-Control", "private, no-store");
+    res.send(buffer);
   }
 
   @Post("kyc/:userId/decision")

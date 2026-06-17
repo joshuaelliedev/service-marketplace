@@ -868,6 +868,37 @@ button.btn-secondary:hover:not(:disabled),
   text-transform: capitalize;
 }
 
+.kyc-doc-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.kyc-doc-cell {
+  flex: 1 1 220px;
+  max-width: 320px;
+}
+
+.kyc-doc-frame {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.kyc-doc-image {
+  display: block;
+  width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-surface-muted, #f4f6fa);
+}
+
+.kyc-doc-open {
+  font-size: 0.875rem;
+}
+
 .status-breakdown {
   list-style: none;
   margin: 0;

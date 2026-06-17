@@ -34,7 +34,8 @@ type KycProfile = {
 };
 
 type PendingItem = {
-  _id: string;
+  _id?: string;
+  id?: string;
   email: string;
   fullName?: string;
   kycStatus: string;
@@ -50,12 +51,15 @@ const ID_LABELS: Record<string, string> = {
   other: "Other government ID",
 };
 
+function itemUserId(item: PendingItem): string {
+  return item._id ?? item.id ?? "";
+}
+
 export default function AdminKycPage() {
   const { ready, isAdmin } = useRequireAdmin();
   const [items, setItems] = useState<PendingItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const token = getToken();
 
   const refresh = useCallback(async () => {
     const t = getToken();
@@ -145,8 +149,9 @@ export default function AdminKycPage() {
         <ul className="booking-list">
           {items?.map((u) => {
             const p = u.profile;
+            const userId = itemUserId(u);
             return (
-              <li key={u._id} className="detail-panel list-item review-card">
+              <li key={userId || u.email} className="detail-panel list-item review-card">
                 <div className="review-card__header">
                   <div>
                     <strong>{p?.legalFullName || u.fullName || u.email}</strong>
@@ -162,7 +167,7 @@ export default function AdminKycPage() {
 
                 {p ? (
                   <>
-                    <dl className="profile-dl profile-dl--compact">
+                    <dl className="profile-dl">
                       <div>
                         <dt>DOB</dt>
                         <dd>{p.dateOfBirthYmd ?? "—"}</dd>
@@ -214,49 +219,48 @@ export default function AdminKycPage() {
                       </div>
                     </dl>
 
-                    {token ? (
-                      <div className="kyc-doc-grid" style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                    {userId ? (
+                      <div className="kyc-doc-grid">
                         {p.hasIdFront ? (
-                          <div>
+                          <div className="kyc-doc-cell">
                             <div className="text-muted">ID front</div>
                             <KycDocumentImage
-                              path={`/admin/kyc/${u._id}/files/id_front`}
-                              token={token}
+                              path={`/admin/kyc/${userId}/files/id_front`}
                               alt="ID front"
                             />
                           </div>
                         ) : null}
                         {p.hasIdBack ? (
-                          <div>
+                          <div className="kyc-doc-cell">
                             <div className="text-muted">ID back</div>
                             <KycDocumentImage
-                              path={`/admin/kyc/${u._id}/files/id_back`}
-                              token={token}
+                              path={`/admin/kyc/${userId}/files/id_back`}
                               alt="ID back"
                             />
                           </div>
                         ) : null}
                         {p.hasSelfie ? (
-                          <div>
+                          <div className="kyc-doc-cell">
                             <div className="text-muted">Selfie</div>
                             <KycDocumentImage
-                              path={`/admin/kyc/${u._id}/files/selfie`}
-                              token={token}
+                              path={`/admin/kyc/${userId}/files/selfie`}
                               alt="Selfie with ID"
                             />
                           </div>
                         ) : null}
                       </div>
-                    ) : null}
+                    ) : (
+                      <p className="text-error">Missing provider id — cannot load documents.</p>
+                    )}
                   </>
                 ) : (
                   <p className="text-muted">No structured KYC profile on file.</p>
                 )}
 
                 <ReviewActions
-                  busy={busyId === u._id}
-                  onApprove={() => decide(u._id, true)}
-                  onReject={(note) => decide(u._id, false, note)}
+                  busy={busyId === userId}
+                  onApprove={() => decide(userId, true)}
+                  onReject={(note) => decide(userId, false, note)}
                 />
               </li>
             );

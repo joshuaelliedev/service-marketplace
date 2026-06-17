@@ -1,10 +1,8 @@
 import { Module, forwardRef } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
-import { RolesGuard } from "../../common/guards/roles.guard";
 import { ImageKitService } from "../imagekit/imagekit.service";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { UsersModule } from "../users/users.module";
-import { KycAdminController } from "./kyc-admin.controller";
 import { KycController } from "./kyc.controller";
 import { ProviderKyc, ProviderKycSchema } from "./kyc.schema";
 import { KycService } from "./kyc.service";
@@ -15,8 +13,8 @@ import { KycService } from "./kyc.service";
     forwardRef(() => UsersModule),
     NotificationsModule,
   ],
-  controllers: [KycController, KycAdminController],
-  providers: [KycService, ImageKitService, RolesGuard],
+  controllers: [KycController],
+  providers: [KycService, ImageKitService],
   exports: [KycService],
 })
 export class KycModule {}

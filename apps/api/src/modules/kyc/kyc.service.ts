@@ -149,17 +149,27 @@ export class KycService {
 
   async listPendingForAdmin() {
     const users = await this.users.listKycPending();
-    const ids = users.map((u) => new Types.ObjectId(u.id));
+    const ids = users.map((u) => new Types.ObjectId(this.userIdOf(u)));
     const profiles = await this.kycModel.find({ userId: { $in: ids } }).lean();
     const byUser = new Map(profiles.map((p) => [p.userId.toString(), p]));
-    return users.map((u) => ({
-      _id: u.id,
-      email: u.email,
-      fullName: u.fullName,
-      kycStatus: u.kycStatus,
-      kycAdminNote: u.kycAdminNote,
-      profile: byUser.get(u.id) ? this.sanitizeProfile(byUser.get(u.id)!) : null,
-    }));
+    return users.map((u) => {
+      const userId = this.userIdOf(u);
+      return {
+        _id: userId,
+        id: userId,
+        email: u.email,
+        fullName: u.fullName,
+        kycStatus: u.kycStatus,
+        kycAdminNote: u.kycAdminNote,
+        profile: byUser.get(userId) ? this.sanitizeProfile(byUser.get(userId)!) : null,
+      };
+    });
+  }
+
+  private userIdOf(user: { id?: string; _id?: { toString(): string } }): string {
+    if (user.id) return user.id;
+    if (user._id) return user._id.toString();
+    throw new BadRequestException("Invalid user record");
   }
 
   async decide(adminId: string, userId: string, approve: boolean, note?: string) {

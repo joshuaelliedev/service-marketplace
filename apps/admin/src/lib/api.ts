@@ -1,5 +1,7 @@
 export function getApiBaseUrl(): string {
   if (typeof window !== "undefined") {
+    const direct = process.env.NEXT_PUBLIC_API_URL?.trim();
+    if (direct) return direct.replace(/\/$/, "");
     return "/api";
   }
   const direct =
@@ -83,7 +85,23 @@ export async function fetchAuthenticatedBlobUrl(
   const res = await fetch(`${getApiBaseUrl()}${path}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!res.ok) throw new Error(`Failed to load file (${res.status})`);
+  if (!res.ok) {
+    const text = await res.text();
+    let message = `Failed to load file (${res.status})`;
+    try {
+      const body = JSON.parse(text) as { message?: string | string[] };
+      if (typeof body.message === "string") message = body.message;
+      else if (Array.isArray(body.message)) message = body.message.join(", ");
+    } catch {
+      if (text.trim()) message = text.slice(0, 200);
+    }
+    throw new Error(message);
+  }
+  const contentType = res.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    throw new Error("Expected an image but received a JSON response");
+  }
   const blob = await res.blob();
+  if (blob.size === 0) throw new Error("Image file is empty");
   return URL.createObjectURL(blob);
 }
