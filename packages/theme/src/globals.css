@@ -899,6 +899,52 @@ button.btn-secondary:hover:not(:disabled),
   font-size: 0.875rem;
 }
 
+.kyc-review-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.kyc-review-alert {
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid #e8c468;
+  background: #fff9e6;
+  color: var(--color-text);
+}
+
+.kyc-review-alert--legacy {
+  border-color: var(--color-border-light);
+  background: var(--color-surface-muted, #f4f6fa);
+}
+
+.kyc-review-alert p {
+  margin: 0.35rem 0 0;
+  font-size: 0.9375rem;
+}
+
+.kyc-review-details {
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md, 8px);
+  padding: 0.75rem 1rem;
+  background: var(--color-surface, #fff);
+}
+
+.kyc-review-details summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--color-primary, #111844);
+  margin-bottom: 0.5rem;
+}
+
+.kyc-doc-cell__label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.875rem;
+}
+
 .status-breakdown {
   list-style: none;
   margin: 0;

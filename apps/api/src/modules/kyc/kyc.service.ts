@@ -154,6 +154,7 @@ export class KycService {
     const byUser = new Map(profiles.map((p) => [p.userId.toString(), p]));
     return users.map((u) => {
       const userId = this.userIdOf(u);
+      const raw = u as { kycDocumentUrl?: string };
       return {
         _id: userId,
         id: userId,
@@ -161,6 +162,7 @@ export class KycService {
         fullName: u.fullName,
         kycStatus: u.kycStatus,
         kycAdminNote: u.kycAdminNote,
+        kycDocumentUrl: raw.kycDocumentUrl?.trim() || null,
         profile: byUser.get(userId) ? this.sanitizeProfile(byUser.get(userId)!) : null,
       };
     });
@@ -181,15 +183,24 @@ export class KycService {
     }
 
     const kyc = await this.kycModel.findOne({ userId: new Types.ObjectId(userId) });
-    if (!kyc?.submittedAt) throw new BadRequestException("No KYC submission on file");
+
+    if (approve) {
+      if (!kyc?.submittedAt) {
+        throw new BadRequestException(
+          "No structured KYC submission on file. Ask the provider to complete verification at Provider → KYC.",
+        );
+      }
+    }
 
     user.kycStatus = approve ? KycStatus.APPROVED : KycStatus.REJECTED;
     user.kycAdminNote = note?.trim() || (approve ? "Approved" : "Rejected");
     await user.save();
 
-    kyc.reviewedAt = new Date();
-    kyc.reviewedBy = new Types.ObjectId(adminId);
-    await kyc.save();
+    if (kyc) {
+      kyc.reviewedAt = new Date();
+      kyc.reviewedBy = new Types.ObjectId(adminId);
+      await kyc.save();
+    }
 
     await this.notifications.notify(
       userId,
@@ -205,7 +216,7 @@ export class KycService {
       email: user.email,
       kycStatus: user.kycStatus,
       kycAdminNote: user.kycAdminNote,
-      profile: this.sanitizeProfile(kyc),
+      profile: kyc ? this.sanitizeProfile(kyc) : null,
     };
   }
 

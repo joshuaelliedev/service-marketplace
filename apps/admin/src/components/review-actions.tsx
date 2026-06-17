@@ -4,6 +4,7 @@ import { useState } from "react";
 
 type ReviewActionsProps = {
   busy?: boolean;
+  approveDisabled?: boolean;
   approveLabel?: string;
   rejectLabel?: string;
   onApprove: () => void | Promise<void>;
@@ -12,6 +13,7 @@ type ReviewActionsProps = {
 
 export function ReviewActions({
   busy = false,
+  approveDisabled = false,
   approveLabel = "Approve",
   rejectLabel = "Reject",
   onApprove,
@@ -61,7 +63,7 @@ export function ReviewActions({
 
   return (
     <div className="list-actions">
-      <button type="button" onClick={() => void onApprove()} disabled={busy}>
+      <button type="button" onClick={() => void onApprove()} disabled={busy || approveDisabled}>
         {busy ? "Working…" : approveLabel}
       </button>
       <button
